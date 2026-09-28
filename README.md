@@ -1,6 +1,6 @@
 # LeaseFlow — ASC 842 demonstration
 
-An interview portfolio prototype for Sorabh Gupta. All contract data and GL balances are fictional.
+A finance automation portfolio prototype by Sorabh Gupta. All contract data and GL balances are fictional.
 
 ## Implemented
 

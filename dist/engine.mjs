@@ -1,4 +1,4 @@
-export const sample = {entity:'Aster Software India Pvt Ltd',leaseId:'DEMO-001',currency:'INR',start:'2026-01-01',months:36,rent:100000,escalation:5,free:3,rate:8,prepayment:0,incentive:60000,idc:12000,type:'operating'};
+export const sample = {entity:'Larkbrook Software India Pvt Ltd',leaseId:'DEMO-001',currency:'INR',start:'2026-01-01',months:36,rent:100000,escalation:5,free:3,rate:8,prepayment:0,incentive:60000,idc:12000,type:'operating'};
 export function validate(a){
  const errors=[];
  for(const k of ['months','rent','escalation','free','rate','prepayment','incentive','idc']) if(!Number.isFinite(+a[k])) errors.push(`${k}: enter a number.`);
