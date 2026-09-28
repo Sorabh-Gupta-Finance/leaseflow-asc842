@@ -116,3 +116,32 @@ export function extract(pages){
  }
  return {found,missing,evidence};
 }
+function parseCsvLine(line){
+ const out=[];let cur='',inQuotes=false;
+ for(let i=0;i<line.length;i++){
+  const ch=line[i];
+  if(inQuotes){
+   if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++;}else inQuotes=false;}
+   else cur+=ch;
+  }else if(ch==='"')inQuotes=true;
+  else if(ch===','){out.push(cur);cur='';}
+  else cur+=ch;
+ }
+ out.push(cur);
+ return out.map(s=>s.trim());
+}
+export function extractCsv(text){
+ const keys=['entity','currency','start','months','rent','escalation','free','incentive'];
+ const numeric=new Set(['months','rent','escalation','free','incentive']);
+ const found={};
+ for(const raw of text.replace(/^﻿/,'').split(/\r\n|\n|\r/)){
+  if(!raw.trim())continue;
+  const [rawKey,rawValue]=parseCsvLine(raw);
+  const key=(rawKey||'').toLowerCase();
+  if(!keys.includes(key))continue;
+  const value=(rawValue||'').trim();
+  found[key]=numeric.has(key)?Number(value.replaceAll(',','')):value;
+ }
+ const missing=keys.filter(k=>found[k]===undefined||found[k]===''||(numeric.has(k)&&!Number.isFinite(found[k])));
+ return {found,missing};
+}
