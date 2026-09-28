@@ -81,6 +81,20 @@ export function initialJournals(a,c){
  const rows=raw.filter(x=>x[1]||x[2]).map(([account,debit,credit])=>({date:a.start,leaseId:a.leaseId,entity:a.entity,currency:a.currency,event:'COMMENCEMENT',account,debit:round2(debit),credit:round2(credit)}));
  const diff=round2(rows.reduce((s,x)=>s+x.credit-x.debit,0));rows[0].debit=round2(rows[0].debit+diff);return rows;
 }
+export function classificationTest(a,initialLiability){
+ const termPct=a.economicLifeMonths>0?a.months/a.economicLifeMonths:0;
+ const pvPct=a.fairValue>0?initialLiability/a.fairValue:0;
+ const termThreshold=(+a.termThreshold||0)/100,pvThreshold=(+a.pvThreshold||0)/100;
+ const criteria=[
+  {key:'ownership',met:!!a.ownershipTransfer},
+  {key:'purchase',met:!!a.purchaseOption},
+  {key:'term',met:termPct>=termThreshold},
+  {key:'pv',met:pvPct>=pvThreshold},
+  {key:'specialized',met:!!a.specializedAsset},
+ ];
+ return {criteria,finance:criteria.some(x=>x.met),termPct,pvPct,termThreshold,pvThreshold};
+}
+export function ibrBuildUp(reference,spread,adjustment){return round2(+reference+ +spread+ +adjustment);}
 export function csv(rows){
  if(!rows.length)return '';
  const keys=Object.keys(rows[0]);
