@@ -1,4 +1,4 @@
-export const sample = {entity:'Aster Software India Pvt Ltd',leaseId:'DEMO-001',currency:'INR',start:'2026-01-01',months:36,rent:100000,escalation:5,free:3,rate:8,prepayment:0,incentive:60000,idc:12000,type:'operating'};
+export const sample = {entity:'Larkbrook Software India Pvt Ltd',leaseId:'DEMO-001',currency:'INR',start:'2026-01-01',months:36,rent:100000,escalation:5,free:3,rate:8,prepayment:0,incentive:60000,idc:12000,type:'operating'};
 export function validate(a){
  const errors=[];
  for(const k of ['months','rent','escalation','free','rate','prepayment','incentive','idc']) if(!Number.isFinite(+a[k])) errors.push(`${k}: enter a number.`);
@@ -115,4 +115,33 @@ export function extract(pages){
   const m=matches[0];found[key]=['entity','start','currency'].includes(key)?m.value:Number(m.value.replaceAll(',',''));evidence[key]=m;
  }
  return {found,missing,evidence};
+}
+function parseCsvLine(line){
+ const out=[];let cur='',inQuotes=false;
+ for(let i=0;i<line.length;i++){
+  const ch=line[i];
+  if(inQuotes){
+   if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++;}else inQuotes=false;}
+   else cur+=ch;
+  }else if(ch==='"')inQuotes=true;
+  else if(ch===','){out.push(cur);cur='';}
+  else cur+=ch;
+ }
+ out.push(cur);
+ return out.map(s=>s.trim());
+}
+export function extractCsv(text){
+ const keys=['entity','currency','start','months','rent','escalation','free','incentive'];
+ const numeric=new Set(['months','rent','escalation','free','incentive']);
+ const found={};
+ for(const raw of text.replace(/^﻿/,'').split(/\r\n|\n|\r/)){
+  if(!raw.trim())continue;
+  const [rawKey,rawValue]=parseCsvLine(raw);
+  const key=(rawKey||'').toLowerCase();
+  if(!keys.includes(key))continue;
+  const value=(rawValue||'').trim();
+  found[key]=numeric.has(key)?Number(value.replaceAll(',','')):value;
+ }
+ const missing=keys.filter(k=>found[k]===undefined||found[k]===''||(numeric.has(k)&&!Number.isFinite(found[k])));
+ return {found,missing};
 }

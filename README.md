@@ -1,11 +1,11 @@
 # LeaseFlow — ASC 842 demonstration
 
-An interview portfolio prototype for Sorabh Gupta. All contract data and GL balances are fictional.
+A finance automation portfolio prototype by Sorabh Gupta. All contract data and GL balances are fictional.
 
 ## Implemented
 
-- Local, text-based PDF extraction using bundled Mozilla PDF.js (Apache-2.0).
-- Exact-label template extraction of eight fields with page references.
+- Local, text-based PDF extraction using bundled Mozilla PDF.js (Apache-2.0), with exact-label template matching of eight fields and page references.
+- A downloadable CSV template as a second, deterministic intake path — fill in your own numbers, save as CSV, and upload; no document parsing involved, so it works for any correctly filled template, not just the one sample file.
 - Reviewable assumptions and a session-only approval gate.
 - Deterministic operating lease and bounded finance lease schedules.
 - Full month-by-month PV working (discount factor and present value per payment), reconciled to the initial liability.
@@ -15,7 +15,7 @@ An interview portfolio prototype for Sorabh Gupta. All contract data and GL bala
 - Commencement and monthly journal proposals, including two AP posting routes, reflecting whichever framework is selected.
 - Monthly current/noncurrent reclassification entries, posted between dedicated subledger accounts and tied out in the GL reconciliation.
 - Balance-level GL reconciliation with an omitted AP reclassification scenario.
-- CSV exports and a printable four-minute presentation guide.
+- CSV exports of schedules, journals and the reconciliation.
 
 No live language model, OCR service, general-purpose contract interpretation, real ERP posting, durable approval or regulatory assurance is provided. Classification facts and the IBR build-up are entered illustratively, not derived from the lease document or market data. Ind AS 116 is presented as converged with IFRS 16 for recognition and measurement; disclosure and transition differences between the two are out of scope. A Microsoft architecture is described as the future production design, not the implementation of this site.
 
@@ -74,6 +74,7 @@ This reads the bundled two-page PDF and checks all eight extracted fields and pa
 
 - Open the home page on desktop and mobile.
 - Download the fictional sample PDF and upload it through the extraction flow.
+- Download the CSV template, change a value or two, and upload it to confirm the deterministic capture path works independently of the PDF.
 - Check eight fields and their page references, then review the accounting assumptions.
 - Confirm initial liability INR 3,048,673.29 and initial ROU INR 3,000,673.29.
 - Expand the PV working panel and confirm the 36-month total ties to the initial liability.

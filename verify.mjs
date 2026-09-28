@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {sample,calculate,validate,journals,initialJournals,reclassJournalRows,classificationTest,ibrBuildUp,round2,extract,csv} from './dist/engine.mjs';
+import {sample,calculate,validate,journals,initialJournals,reclassJournalRows,classificationTest,ibrBuildUp,round2,extract,extractCsv,csv} from './dist/engine.mjs';
 const close=(a,b,t=.000001)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
 let c=calculate(sample);
 close(c.totalCash,3483000);close(c.straightLine,95416.66666666667);
@@ -68,5 +68,15 @@ close(ibrBuildUp(6,1.5,0.5),8);close(ibrBuildUp(0,0,0),0);close(ibrBuildUp(5.111
 assert.ok(validate({...sample,months:0}).length);assert.ok(validate({...sample,start:'2026-02-30'}).length);assert.ok(validate({...sample,start:'2026-01-15'}).length);
 assert.throws(()=>calculate({...sample,incentive:100000000}),/negative/);
 assert.equal(extract(['unstructured unsupported PDF']).missing.length,8);
+// CSV template capture: deterministic field-by-field, unlike PDF label matching.
+const csvOk=csv([{field:'entity',value:'Test Co, LLC'},{field:'currency',value:'INR'},{field:'start',value:'2026-01-01'},{field:'months',value:36},{field:'rent',value:100000},{field:'escalation',value:5},{field:'free',value:3},{field:'incentive',value:60000}]);
+const parsedCsv=extractCsv(csvOk);
+assert.equal(parsedCsv.missing.length,0);assert.equal(parsedCsv.found.entity,'Test Co, LLC');// comma inside a quoted field survives round-trip
+assert.equal(parsedCsv.found.months,36);close(parsedCsv.found.rent,100000);
+const csvMissing=extractCsv('field,value\nentity,Test Co\ncurrency,INR');
+assert.deepEqual(csvMissing.missing.sort(),['escalation','free','incentive','months','rent','start'].sort());
+const plainCsv='field,value\nentity,Sample Corp\ncurrency,USD\nstart,2027-06-01\nmonths,24\nrent,5000\nescalation,0\nfree,0\nincentive,0';
+const parsedPlain=extractCsv(plainCsv);// unquoted, as Excel would export it with no special characters
+assert.equal(parsedPlain.missing.length,0);assert.equal(parsedPlain.found.currency,'USD');close(parsedPlain.found.rent,5000);
 assert.match(csv([{a:'=SUM(A1)',b:2}]),/"'=SUM/);
 console.log(JSON.stringify({result:'passed',monthlyJournalChecks:tested,scenarios:7,sample:{initialLiability:c.initialLiability,initialROU:c.initialROU,monthlyExpense:c.straightLine}}));
