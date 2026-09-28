@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {sample,calculate,validate,journals,initialJournals,reclassJournalRows,round2,extract,csv} from './dist/engine.mjs';
+import {sample,calculate,validate,journals,initialJournals,reclassJournalRows,classificationTest,ibrBuildUp,round2,extract,csv} from './dist/engine.mjs';
 const close=(a,b,t=.000001)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
 let c=calculate(sample);
 close(c.totalCash,3483000);close(c.straightLine,95416.66666666667);
@@ -52,6 +52,19 @@ for(const config of [sample,{...sample,type:'finance'},simple,{...simple,rate:0}
  const init=initialJournals(config,v);close(init.reduce((s,j)=>s+j.debit-j.credit,0),0,.001);
  }
 }
+// Classification test: ASC 842's five criteria; IFRS 16 / Ind AS 116 have no lessee equivalent (that is a UI-level statement, not engine behavior).
+const clsFacts={months:sample.months,ownershipTransfer:false,purchaseOption:false,economicLifeMonths:480,fairValue:40000000,specializedAsset:false,termThreshold:75,pvThreshold:90};
+const clsOperating=classificationTest(clsFacts,c.initialLiability);
+assert.equal(clsOperating.finance,false);assert.ok(clsOperating.criteria.every(x=>!x.met));
+close(clsOperating.termPct,sample.months/480);close(clsOperating.pvPct,c.initialLiability/40000000);
+const clsOwnership=classificationTest({...clsFacts,ownershipTransfer:true},c.initialLiability);
+assert.equal(clsOwnership.finance,true);assert.equal(clsOwnership.criteria[0].met,true);
+const clsTerm=classificationTest({...clsFacts,economicLifeMonths:40},c.initialLiability);// 36 of 40 months = 90% >= 75% threshold
+assert.equal(clsTerm.criteria[2].met,true);assert.equal(clsTerm.finance,true);
+const clsFairValue=classificationTest({...clsFacts,fairValue:c.initialLiability/0.95},c.initialLiability);// PV is 95% of fair value, above the 90% threshold
+assert.equal(clsFairValue.criteria[3].met,true);assert.equal(clsFairValue.finance,true);
+// IBR build-up: reference rate + credit spread + adjustment, rounded to cents of a percentage point.
+close(ibrBuildUp(6,1.5,0.5),8);close(ibrBuildUp(0,0,0),0);close(ibrBuildUp(5.111,1.222,0.111),6.44,.001);
 assert.ok(validate({...sample,months:0}).length);assert.ok(validate({...sample,start:'2026-02-30'}).length);assert.ok(validate({...sample,start:'2026-01-15'}).length);
 assert.throws(()=>calculate({...sample,incentive:100000000}),/negative/);
 assert.equal(extract(['unstructured unsupported PDF']).missing.length,8);
