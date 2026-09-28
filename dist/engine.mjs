@@ -32,7 +32,8 @@ export function calculate(a){
    if(Math.abs(liability)<1e-7)liability=0;
    const openROU=rou,amortization=a.type==='operating'?straightLine-interest:initialROU/n;
    rou=openROU-amortization;if(Math.abs(rou)<1e-7)rou=0;
-   return {month:i+1,date,payment,openLiability,interest,closeLiability:liability,openROU,amortization,closeROU:rou,expense:a.type==='operating'?straightLine:interest+amortization};
+   const discountFactor=1/(1+r)**(i+1);
+   return {month:i+1,date,payment,discountFactor,presentValue:payment*discountFactor,openLiability,interest,closeLiability:liability,openROU,amortization,closeROU:rou,expense:a.type==='operating'?straightLine:interest+amortization};
  });
  rows.forEach((x,i)=>{
    const later=rows[Math.min(i+12,rows.length-1)].closeLiability;
@@ -40,7 +41,13 @@ export function calculate(a){
    x.noncurrentLiability=x.closeLiability-x.currentLiability;
    if(Math.abs(x.noncurrentLiability)<1e-7)x.noncurrentLiability=0;
  });
- return {initialLiability,initialROU,totalCash,straightLine,totalExpense:rows.reduce((s,x)=>s+x.expense,0),rows};
+ const initialCurrentLiability=Math.max(0,initialLiability-rows[Math.min(11,rows.length-1)].closeLiability);
+ const initialNoncurrentLiability=initialLiability-initialCurrentLiability;
+ rows.forEach((x,i)=>{
+   x.priorCurrentLiability=i===0?initialCurrentLiability:rows[i-1].currentLiability;
+   x.reclassAmount=round2(x.currentLiability-x.priorCurrentLiability-x.interest+x.payment);
+ });
+ return {initialLiability,initialROU,totalCash,straightLine,periodicRate:r,initialCurrentLiability,initialNoncurrentLiability,totalExpense:rows.reduce((s,x)=>s+x.expense,0),rows};
 }
 export function round2(n){return Math.round((n+Number.EPSILON)*100)/100;}
 export function journals(a,row,route='liability'){
@@ -52,18 +59,25 @@ export function journals(a,row,route='liability'){
  const expense=round2(interest+amort);
  if(a.type==='operating'){
  add('MONTHLY-MEASUREMENT','610100 · Operating lease expense',expense,0);
- movement('MONTHLY-MEASUREMENT','220100 · Lease liability',interest);
+ movement('MONTHLY-MEASUREMENT','220101 · Lease liability – current portion',interest);
  movement('MONTHLY-MEASUREMENT','150110 · Accumulated ROU reduction',amort);
  }else{
- add('MONTHLY-INTEREST','710100 · Finance lease interest',interest,0);movement('MONTHLY-INTEREST','220100 · Lease liability',interest);
+ add('MONTHLY-INTEREST','710100 · Finance lease interest',interest,0);movement('MONTHLY-INTEREST','220101 · Lease liability – current portion',interest);
  add('MONTHLY-AMORTIZATION','610200 · ROU amortization expense',amort,0);movement('MONTHLY-AMORTIZATION','150110 · Accumulated ROU amortization',amort);
  }
- add(route==='expense'?'AP-RECLASSIFICATION':'RENT-INVOICE','220100 · Lease liability',row.payment,0);
+ add(route==='expense'?'AP-RECLASSIFICATION':'RENT-INVOICE','220101 · Lease liability – current portion',row.payment,0);
  add(route==='expense'?'AP-RECLASSIFICATION':'RENT-INVOICE',route==='expense'?'610000 · AP rent expense':'210100 · Accounts payable',0,row.payment);
  return out;
 }
+export function reclassJournalRows(a,row){
+ const amt=round2(row.reclassAmount);
+ if(Math.abs(amt)<.005)return [];
+ const [from,to]=amt>0?['220102 · Lease liability – noncurrent portion','220101 · Lease liability – current portion']:['220101 · Lease liability – current portion','220102 · Lease liability – noncurrent portion'];
+ const base={date:row.date,leaseId:a.leaseId,entity:a.entity,currency:a.currency,event:'CURRENT-NONCURRENT-RECLASS'};
+ return [{...base,account:from,debit:Math.abs(amt),credit:0},{...base,account:to,debit:0,credit:Math.abs(amt)}];
+}
 export function initialJournals(a,c){
- const raw=[['150100 · ROU asset',c.initialROU,0],['220100 · Lease liability',0,c.initialLiability],['140100 · Prepaid rent',0,+a.prepayment],['220200 · Incentive clearing',+a.incentive,0],['140200 · Initial direct cost clearing',0,+a.idc]];
+ const raw=[['150100 · ROU asset',c.initialROU,0],['220101 · Lease liability – current portion',0,c.initialCurrentLiability],['220102 · Lease liability – noncurrent portion',0,c.initialNoncurrentLiability],['140100 · Prepaid rent',0,+a.prepayment],['220200 · Incentive clearing',+a.incentive,0],['140200 · Initial direct cost clearing',0,+a.idc]];
  const rows=raw.filter(x=>x[1]||x[2]).map(([account,debit,credit])=>({date:a.start,leaseId:a.leaseId,entity:a.entity,currency:a.currency,event:'COMMENCEMENT',account,debit:round2(debit),credit:round2(credit)}));
  const diff=round2(rows.reduce((s,x)=>s+x.credit-x.debit,0));rows[0].debit=round2(rows[0].debit+diff);return rows;
 }
