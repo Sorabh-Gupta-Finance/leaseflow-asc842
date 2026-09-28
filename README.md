@@ -8,7 +8,9 @@ An interview portfolio prototype for Sorabh Gupta. All contract data and GL bala
 - Exact-label template extraction of eight fields with page references.
 - Reviewable assumptions and a session-only approval gate.
 - Deterministic operating lease and bounded finance lease schedules.
+- Full month-by-month PV working (discount factor and present value per payment), reconciled to the initial liability.
 - Commencement and monthly journal proposals, including two AP posting routes.
+- Monthly current/noncurrent reclassification entries, posted between dedicated subledger accounts and tied out in the GL reconciliation.
 - Balance-level GL reconciliation with an omitted AP reclassification scenario.
 - CSV exports and a printable four-minute presentation guide.
 
@@ -70,8 +72,10 @@ This reads the bundled two-page PDF and checks all eight extracted fields and pa
 - Download the fictional sample PDF and upload it through the extraction flow.
 - Check eight fields and their page references, then review the accounting assumptions.
 - Confirm initial liability INR 3,048,673.29 and initial ROU INR 3,000,673.29.
-- Review schedules, both journal routes and the seeded reconciliation exception.
+- Expand the PV working panel and confirm the 36-month total ties to the initial liability.
+- Review schedules, both journal routes, the current/noncurrent reclassification entry and the seeded reconciliation exception.
 - Export CSVs and open the printable case study.
+- Confirm the "View source on GitHub" link in the sidebar and on the case study page.
 
 Automated accounting and PDF checks do not replace browser interaction checks or an independent accounting review. WebMCP is an optional, feature-detected integration; it has not been validated in a supported browser.
 
@@ -81,9 +85,8 @@ Automated accounting and PDF checks do not replace browser interaction checks or
 
 - Live AI extraction with source evidence and mandatory reviewer confirmation.
 - Documented five-criteria classification assessment and supported IBR rationale.
-- Current/noncurrent reclassification journals and matching GL reconciliation.
 - A dedicated finance lease example, followed by a modification scenario.
-- Reporting-date disclosures and a maturity-to-liability bridge.
+- Reporting-date disclosures beyond the annual maturity table (weighted-average term and rate, lease cost components).
 
 These are planned enhancements, not implemented capabilities.
 
